@@ -7,9 +7,7 @@ import org.mapstruct.factory.Mappers;
 
 @Mapper
 public interface MberMapper {
-
     MberMapper INSTANCE = Mappers.getMapper(MberMapper.class);
-
 
     Mber joinReqToMber(MberDto.JoinRequestDto joinRequestDto);
 

@@ -15,50 +15,59 @@ import java.util.Date;
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
-    private final String JWT_SECRET = "ONANDON-INFOMATION-JWT-SECRET-TOKEN";
-    private final String JWT_REFRESH = "ONANDON-INFOMATION-JWT-REFRESH-TOKEN";
+    public enum TokenKey {
+        JWT_SECRET("ONANDON-INFOMATION-JWT-SECRET-TOKEN"),
+        JWT_REFRESH("ONANDON-INFOMATION-JWT-REFRESH-TOKEN");
 
-    private final int JWT_EXPIRATION_TIME = 60 * 60 * 60 * 60;
+        private final String value;
+
+        TokenKey(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
 
     private final CustomUserDetailsService detailsService;
 
-    private String generateToken(int mberSn, Date expiryDate, Key key) {
+    private String generateToken(int mberSn, Key key) {
         return Jwts.builder()
             .setSubject(ObjectUtils.getDisplayString(mberSn))
             .setIssuedAt(new Date())
-            .setExpiration(expiryDate)
             .signWith(key, SignatureAlgorithm.HS256)
             .compact();
     }
 
-    private Key getKey() {
+    private Key getKey(String key) {
 
         byte[] keyBytes
-            = JWT_SECRET.getBytes();
+            = key.getBytes();
 
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String getToken(int mberSn) {
-        Date date
+    public String getToken(int mberSn, TokenKey key) {
+        /*Date date
             = new Date();
 
         Date expiryDate
-            = new Date(date.getTime() + JWT_EXPIRATION_TIME);
+            = new Date(date.getTime() + JWT_EXPIRATION_TIME);*/
 
-        return generateToken(mberSn, expiryDate, getKey());
+        return generateToken(mberSn, getKey(key.value));
     }
 
-    private Claims parseJwtToken(String token) {
+    /*private Claims parseJwtToken(String token) {
         return Jwts.parserBuilder()
             .setSigningKey(getKey())
             .build()
             .parseClaimsJws(token)
             .getBody();
-    }
+    }*/
 
-    public UserDetails getIdFromJwtToken(String token) {
-        return detailsService.loadUserByUsername(parseJwtToken(token).getSubject());
+    public UserDetails getUserDetails(String mberSn) {
+        return detailsService.loadUserByUsername(mberSn);
     }
 
     public boolean validateToken(String token) {
@@ -66,21 +75,20 @@ public class JwtProvider {
 
         try {
             Jwts.parserBuilder()
-                .setSigningKey(getKey())
+                .setSigningKey(getKey(TokenKey.JWT_SECRET.value))
                 .build()
                 .parseClaimsJws(token);
 
             returnValue = true;
-        } catch (SecurityException ex) {
+        } catch (SecurityException e) {
             log.error("Invalid JWT signature");
-        } catch (MalformedJwtException ex) {
+        } catch (MalformedJwtException e) {
             log.error("Invalid JWT token");
-        } catch (ExpiredJwtException ex) {
+        } catch (ExpiredJwtException e) {
             log.error("Expired JWT token");
-            ex.printStackTrace();
-        } catch (UnsupportedJwtException ex) {
+        } catch (UnsupportedJwtException e) {
             log.error("Unsupported JWT token");
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException e) {
             log.error("JWT claims string is empty.");
         }
         return returnValue;

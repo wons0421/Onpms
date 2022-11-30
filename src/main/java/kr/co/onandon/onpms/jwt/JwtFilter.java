@@ -22,33 +22,36 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-            // Header에 있는 token 정보 추출
-            String token = getJwtFromRequest((HttpServletRequest) request);
+        // Header에 있는 token 정보 추출
+        String token = getJwtFromRequest((HttpServletRequest) request);
 
-            // redis 객체 호출
-            ValueOperations<String, String> operations = redisTemplate.opsForValue();
+        // redis 객체 호출
+        ValueOperations<String, String> operations = redisTemplate.opsForValue();
 
-            if (token != null) {
-                if (operations.get(token) != null) {
-                    boolean isValidToken = jwtProvider.validateToken(token);
+        if (token != null) {
+            String mberSn = operations.get(token);
 
-                    if (isValidToken) {
-                        UserDetails userDetails = jwtProvider.getIdFromJwtToken(token);
+            if (mberSn.length() > 0) {
+                boolean isValidToken = jwtProvider.validateToken(token);
 
-                        UsernamePasswordAuthenticationToken authenticationToken
-                            = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-                        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                if (isValidToken) {
+                    UserDetails userDetails = jwtProvider.getUserDetails(mberSn);
 
-                    } else {
-                        request.setAttribute("unauthorization", "002 Authentication key expiration.");
-                    }
+                    UsernamePasswordAuthenticationToken authenticationToken
+                        = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
                 } else {
-                    request.setAttribute("unauthorization", "001 Not an authorized user.");
+                    request.setAttribute("unauthorization", "002 Authentication key expiration.");
                 }
             } else {
-                request.setAttribute("unauthorization", "No authentication key.");
+                request.setAttribute("unauthorization", "001 Not an authorized user.");
             }
+        } else {
+            request.setAttribute("unauthorization", "No authentication key.");
+        }
         // 사용자 인증 안된 상태에서  dofilter 호출 시 JwtEntryPoint로 전달
         filterChain.doFilter(request, response);
     }

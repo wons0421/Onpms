@@ -52,15 +52,16 @@ public class SecurityConfig {
 
         // 인증 처리를 Custiom한 filter로 할 수 있게 filter 등록
         http.addFilterBefore(new JwtFilter(jwtProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests((requests) -> requests
+            .authorizeRequests((authorize) -> authorize
                 .antMatchers("/joinForm", "/join", "/login").permitAll()
                 .anyRequest().authenticated()
             )
-            .formLogin((form) -> form
-                .loginPage("/loginForm")
+            /*.formLogin((form) -> form
+                .loginPage("/login")
                 .usernameParameter("mberId")
+                .passwordParameter("pw")
                 .permitAll()
-            );
+            )*/;
 
         return http.build();
     }

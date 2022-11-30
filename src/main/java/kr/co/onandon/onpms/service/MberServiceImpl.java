@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.time.Duration;
 
@@ -31,7 +32,7 @@ public class MberServiceImpl implements MberService{
     @Autowired
     private final RedisTemplate redisTemplate;
 
-    private final int EXPIRE_TIME = 60;
+    private final int EXPIRE_TIME = 10;
 
     @Override
     public ResponseEntity join(MberDto.JoinRequestDto params) throws Exception {
@@ -48,9 +49,6 @@ public class MberServiceImpl implements MberService{
         Mber mber = MberMapper.INSTANCE.joinReqToMber(params);
 
         mber.setAuth("A00");
-
-        /*Mber mber = modelMapper.map(params, Mber.class);
-        mber.setAuth("A00");*/
 
         mberRepository.save(mber);
 
@@ -73,12 +71,12 @@ public class MberServiceImpl implements MberService{
         }
 
 
-        String token = jwtProvider.getToken(findMber.getMberSn());
+        String token = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_SECRET);
 
         ValueOperations<String, String> operations
             = redisTemplate.opsForValue();
 
-        operations.set(token, mberId);
+        operations.set(token, ObjectUtils.getDisplayString(findMber.getMberSn()));
 
         redisTemplate.expire(token, Duration.ofSeconds(EXPIRE_TIME));
 

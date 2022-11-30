@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class MberController {
     }
 
     @PostMapping("/curDate")
-    public ResponseEntity curDate() {
+    public ResponseEntity curDate(@RequestBody Map<String, Object> params) {
 
         Date date = new Date();
 
