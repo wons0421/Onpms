@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +34,8 @@ public class MberServiceImpl implements MberService{
     @Autowired
     private final RedisTemplate redisTemplate;
 
-    private final int EXPIRE_TIME = 10;
+    private final int BASIC_EXPIRE_TIME = 10;
+    private final int REFRESH_EXPIRE_TIME = 60 * 10;
 
     @Override
     public ResponseEntity join(MberDto.JoinRequestDto params) throws Exception {
@@ -71,16 +74,34 @@ public class MberServiceImpl implements MberService{
         }
 
 
-        String token = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_SECRET);
-
+        String token = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_BASIC);
+        String refreshToken = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_REFRESH);
         ValueOperations<String, String> operations
             = redisTemplate.opsForValue();
 
         operations.set(token, ObjectUtils.getDisplayString(findMber.getMberSn()));
+        operations.set(refreshToken, ObjectUtils.getDisplayString(findMber.getMberSn()));
 
-        redisTemplate.expire(token, Duration.ofSeconds(EXPIRE_TIME));
+        redisTemplate.expire(token, Duration.ofSeconds(BASIC_EXPIRE_TIME));
+        redisTemplate.expire(refreshToken, Duration.ofSeconds(REFRESH_EXPIRE_TIME));
+
+        Map<String, Object> result = new HashMap<>();
+
+        result.put("token", token);
+        result.put("refreshToken", refreshToken);
+        result.put("mberSn", findMber.getMberSn());
+
+        return ResponseEntity.ok(result);
+    }
+
+    @Override
+    public ResponseEntity refresh(int mberSn) throws Exception {
+        String token = jwtProvider.getToken(mberSn, JwtProvider.TokenKey.JWT_BASIC);
+        ValueOperations<String, String> operations
+            = redisTemplate.opsForValue();
+
+        operations.set(token, ObjectUtils.getDisplayString(mberSn));
 
         return ResponseEntity.ok(token);
     }
-
 }

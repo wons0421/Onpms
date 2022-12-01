@@ -9,4 +9,5 @@ public interface MberService {
 
     public ResponseEntity login(MberDto.LoginRequestDto params) throws Exception;
 
+    public ResponseEntity refresh(int mberSn) throws Exception;
 }

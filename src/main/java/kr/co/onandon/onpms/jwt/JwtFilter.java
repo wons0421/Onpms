@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,6 +15,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Duration;
 
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -31,11 +33,34 @@ public class JwtFilter extends OncePerRequestFilter {
         if (token != null) {
             String mberSn = operations.get(token);
 
-            if (mberSn.length() > 0) {
-                boolean isValidToken = jwtProvider.validateToken(token);
+            if (mberSn != null) {
+                JwtProvider.ValidateResult isValidToken =
+                    jwtProvider.validateToken(
+                        token,
+                        JwtProvider.TokenKey.JWT_BASIC.getValue()
+                    );
+
+                if (JwtProvider.ValidateResult.DIFFERENT_KEY.equals(isValidToken)) {
+                    isValidToken =
+                        jwtProvider.validateToken(
+                            token,
+                            JwtProvider.TokenKey.JWT_REFRESH.getValue()
+                        );
+
+                    token = jwtProvider.getToken(
+                        Integer.parseInt(mberSn),
+                        JwtProvider.TokenKey.JWT_BASIC
+                    );
+
+                    operations.set(token, ObjectUtils.getDisplayString(mberSn));
+
+                    redisTemplate.expire(token, Duration.ofSeconds(60));
 
 
-                if (isValidToken) {
+                    response.addHeader("newToken", token);
+                }
+
+                if (JwtProvider.ValidateResult.OK.equals(isValidToken)) {
                     UserDetails userDetails = jwtProvider.getUserDetails(mberSn);
 
                     UsernamePasswordAuthenticationToken authenticationToken

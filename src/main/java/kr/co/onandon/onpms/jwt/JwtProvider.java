@@ -16,7 +16,7 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtProvider {
     public enum TokenKey {
-        JWT_SECRET("ONANDON-INFOMATION-JWT-SECRET-TOKEN"),
+        JWT_BASIC("ONANDON-INFOMATION-JWT-SECRET-TOKEN"),
         JWT_REFRESH("ONANDON-INFOMATION-JWT-REFRESH-TOKEN");
 
         private final String value;
@@ -28,6 +28,10 @@ public class JwtProvider {
         public String getValue() {
             return value;
         }
+    }
+
+    public enum ValidateResult {
+        OK, DIFFERENT_KEY, ERROR
     }
 
     private final CustomUserDetailsService detailsService;
@@ -49,37 +53,23 @@ public class JwtProvider {
     }
 
     public String getToken(int mberSn, TokenKey key) {
-        /*Date date
-            = new Date();
-
-        Date expiryDate
-            = new Date(date.getTime() + JWT_EXPIRATION_TIME);*/
-
         return generateToken(mberSn, getKey(key.value));
     }
-
-    /*private Claims parseJwtToken(String token) {
-        return Jwts.parserBuilder()
-            .setSigningKey(getKey())
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
-    }*/
 
     public UserDetails getUserDetails(String mberSn) {
         return detailsService.loadUserByUsername(mberSn);
     }
 
-    public boolean validateToken(String token) {
-        boolean returnValue = false;
+    public ValidateResult validateToken(String token, String key) {
+        ValidateResult returnValue = ValidateResult.ERROR;
 
         try {
             Jwts.parserBuilder()
-                .setSigningKey(getKey(TokenKey.JWT_SECRET.value))
+                .setSigningKey(getKey(key))
                 .build()
                 .parseClaimsJws(token);
 
-            returnValue = true;
+            returnValue = ValidateResult.OK;
         } catch (SecurityException e) {
             log.error("Invalid JWT signature");
         } catch (MalformedJwtException e) {
@@ -90,7 +80,10 @@ public class JwtProvider {
             log.error("Unsupported JWT token");
         } catch (IllegalArgumentException e) {
             log.error("JWT claims string is empty.");
+        } catch (SignatureException e) {
+            returnValue = ValidateResult.DIFFERENT_KEY;
         }
+
         return returnValue;
     }
 }
