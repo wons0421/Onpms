@@ -5,6 +5,7 @@ import kr.co.onandon.onpms.entity.Mber;
 import kr.co.onandon.onpms.jwt.JwtProvider;
 import kr.co.onandon.onpms.mapper.MberMapper;
 import kr.co.onandon.onpms.repository.MberRepository;
+import kr.co.onandon.onpms.security.SecurityEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,7 +21,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class MberServiceImpl implements MberService{
+public class MberServiceImpl implements MberService {
 
     @Autowired
     private final MberRepository mberRepository;
@@ -33,9 +34,6 @@ public class MberServiceImpl implements MberService{
 
     @Autowired
     private final RedisTemplate redisTemplate;
-
-    private final int BASIC_EXPIRE_TIME = 10;
-    private final int REFRESH_EXPIRE_TIME = 60 * 10;
 
     @Override
     public ResponseEntity join(MberDto.JoinRequestDto params) throws Exception {
@@ -77,14 +75,24 @@ public class MberServiceImpl implements MberService{
             = redisTemplate.opsForValue();
 
         // token 발급
-        String token = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_BASIC);
+        String token = jwtProvider.getToken(findMber.getMberSn(), SecurityEnum.TokenKey.JWT_BASIC);
         operations.set(token, ObjectUtils.getDisplayString(findMber.getMberSn()));
-        redisTemplate.expire(token, Duration.ofSeconds(BASIC_EXPIRE_TIME));
+        redisTemplate
+            .expire(token,
+                    Duration.ofSeconds(SecurityEnum
+                                           .ExpiredTime
+                                           .BASIC_EXPIRE_TIME.getTime())
+            );
 
         // refresh token 발급
-        String refreshToken = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_REFRESH);
+        String refreshToken = jwtProvider.getToken(findMber.getMberSn(), SecurityEnum.TokenKey.JWT_REFRESH);
         operations.set(refreshToken, ObjectUtils.getDisplayString(findMber.getMberSn()));
-        redisTemplate.expire(refreshToken, Duration.ofSeconds(REFRESH_EXPIRE_TIME));
+        redisTemplate
+            .expire(refreshToken,
+                    Duration.ofSeconds(SecurityEnum
+                                           .ExpiredTime
+                                           .REFRESH_EXPIRE_TIME.getTime())
+            );
 
         Map<String, Object> result = new HashMap<>();
 
@@ -97,7 +105,7 @@ public class MberServiceImpl implements MberService{
 
     @Override
     public ResponseEntity refresh(int mberSn) throws Exception {
-        String token = jwtProvider.getToken(mberSn, JwtProvider.TokenKey.JWT_BASIC);
+        String token = jwtProvider.getToken(mberSn, SecurityEnum.TokenKey.JWT_BASIC);
         ValueOperations<String, String> operations
             = redisTemplate.opsForValue();
 

@@ -3,6 +3,7 @@ package kr.co.onandon.onpms.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import kr.co.onandon.onpms.security.CustomUserDetailsService;
+import kr.co.onandon.onpms.security.SecurityEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,25 +16,6 @@ import java.util.Date;
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
-    public enum TokenKey {
-        JWT_BASIC("ONANDON-INFOMATION-JWT-SECRET-TOKEN"),
-        JWT_REFRESH("ONANDON-INFOMATION-JWT-REFRESH-TOKEN");
-
-        private final String value;
-
-        TokenKey(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
-    public enum ValidateResult {
-        OK, DIFFERENT_KEY, ERROR
-    }
-
     private final CustomUserDetailsService detailsService;
 
     private String generateToken(int mberSn, Key key) {
@@ -52,16 +34,16 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String getToken(int mberSn, TokenKey key) {
-        return generateToken(mberSn, getKey(key.value));
+    public String getToken(int mberSn, SecurityEnum.TokenKey key) {
+        return generateToken(mberSn, getKey(key.getValue()));
     }
 
     public UserDetails getUserDetails(String mberSn) {
         return detailsService.loadUserByUsername(mberSn);
     }
 
-    public ValidateResult validateToken(String token, String key) {
-        ValidateResult returnValue = ValidateResult.ERROR;
+    public SecurityEnum.ValidateResult validateToken(String token, String key) {
+        SecurityEnum.ValidateResult returnValue = SecurityEnum.ValidateResult.ERROR;
 
         try {
             Jwts.parserBuilder()
@@ -69,7 +51,7 @@ public class JwtProvider {
                 .build()
                 .parseClaimsJws(token);
 
-            returnValue = ValidateResult.OK;
+            returnValue = SecurityEnum.ValidateResult.OK;
         } catch (SecurityException e) {
             log.error("Invalid JWT signature");
         } catch (MalformedJwtException e) {
@@ -81,7 +63,7 @@ public class JwtProvider {
         } catch (IllegalArgumentException e) {
             log.error("JWT claims string is empty.");
         } catch (SignatureException e) {
-            returnValue = ValidateResult.DIFFERENT_KEY;
+            returnValue = SecurityEnum.ValidateResult.DIFFERENT_KEY;
         }
 
         return returnValue;

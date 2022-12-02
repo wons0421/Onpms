@@ -1,5 +1,6 @@
 package kr.co.onandon.onpms.jwt;
 
+import kr.co.onandon.onpms.security.SecurityEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -31,7 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
         // Header에 있는 token 정보 추출
         String token = getJwtFromRequest((HttpServletRequest) request);
 
-        JwtProvider.ValidateResult isValidToken;
+        SecurityEnum.ValidateResult isValidToken;
 
         // token 없으면 아웃
         if (token == null) {
@@ -52,31 +53,36 @@ public class JwtFilter extends OncePerRequestFilter {
         isValidToken =
             jwtProvider.validateToken(
                 token,
-                JwtProvider.TokenKey.JWT_BASIC.getValue()
+                SecurityEnum.TokenKey.JWT_BASIC.getValue()
             );
 
         // return 값이 DIFFERENT_KEY이면 키값이 refresh token 일수도 있으니 다시 한번 체크
-        if (JwtProvider.ValidateResult.DIFFERENT_KEY.equals(isValidToken)) {
+        if (SecurityEnum.ValidateResult.DIFFERENT_KEY.equals(isValidToken)) {
             isValidToken =
                 jwtProvider.validateToken(
                     token,
-                    JwtProvider.TokenKey.JWT_REFRESH.getValue()
+                    SecurityEnum.TokenKey.JWT_REFRESH.getValue()
                 );
 
             token = jwtProvider.getToken(
                 Integer.parseInt(mberSn),
-                JwtProvider.TokenKey.JWT_BASIC
+                SecurityEnum.TokenKey.JWT_BASIC
             );
 
             operations.set(token, ObjectUtils.getDisplayString(mberSn));
 
-            redisTemplate.expire(token, Duration.ofSeconds(60));
+            redisTemplate
+                .expire(token,
+                        Duration.ofSeconds(SecurityEnum
+                                               .ExpiredTime
+                                               .BASIC_EXPIRE_TIME.getTime())
+                );
 
             response.addHeader("newtoken", token);
         }
 
         // validation 통과 못하면 아웃
-        if (!JwtProvider.ValidateResult.OK.equals(isValidToken)) {
+        if (!SecurityEnum.ValidateResult.OK.equals(isValidToken)) {
             request.setAttribute("unauthorization", "002 Authentication key expiration.");
             filterChain.doFilter(request, response);
             return;
@@ -85,7 +91,10 @@ public class JwtFilter extends OncePerRequestFilter {
         UserDetails userDetails = jwtProvider.getUserDetails(mberSn);
 
         UsernamePasswordAuthenticationToken authenticationToken
-            = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            = new UsernamePasswordAuthenticationToken(userDetails,
+                                                      null,
+                                                      userDetails.getAuthorities()
+        );
 
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
