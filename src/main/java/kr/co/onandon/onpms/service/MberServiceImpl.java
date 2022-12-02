@@ -16,8 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -75,7 +73,8 @@ public class MberServiceImpl implements MberService {
             = redisTemplate.opsForValue();
 
         // token 발급
-        String token = jwtProvider.getToken(findMber.getMberSn(), SecurityEnum.TokenKey.JWT_BASIC);
+        String token =
+            jwtProvider.getToken(findMber.getMberSn(), SecurityEnum.TokenKey.JWT_BASIC);
         operations.set(token, ObjectUtils.getDisplayString(findMber.getMberSn()));
         redisTemplate
             .expire(token,
@@ -85,7 +84,8 @@ public class MberServiceImpl implements MberService {
             );
 
         // refresh token 발급
-        String refreshToken = jwtProvider.getToken(findMber.getMberSn(), SecurityEnum.TokenKey.JWT_REFRESH);
+        String refreshToken =
+            jwtProvider.getToken(findMber.getMberSn(), SecurityEnum.TokenKey.JWT_REFRESH);
         operations.set(refreshToken, ObjectUtils.getDisplayString(findMber.getMberSn()));
         redisTemplate
             .expire(refreshToken,
@@ -94,11 +94,8 @@ public class MberServiceImpl implements MberService {
                                            .REFRESH_EXPIRE_TIME.getTime())
             );
 
-        Map<String, Object> result = new HashMap<>();
-
-        result.put("token", token);
-        result.put("refreshToken", refreshToken);
-        result.put("mberSn", findMber.getMberSn());
+        MberDto.LoginResponseDto result =
+            new MberDto.LoginResponseDto(token, refreshToken, findMber.getMberSn());
 
         return ResponseEntity.ok(result);
     }

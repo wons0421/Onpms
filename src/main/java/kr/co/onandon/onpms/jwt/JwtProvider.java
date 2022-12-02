@@ -42,12 +42,12 @@ public class JwtProvider {
         return detailsService.loadUserByUsername(mberSn);
     }
 
-    public SecurityEnum.ValidateResult validateToken(String token, String key) {
+    public SecurityEnum.ValidateResult validateToken(String token, SecurityEnum.TokenKey key) {
         SecurityEnum.ValidateResult returnValue = SecurityEnum.ValidateResult.ERROR;
 
         try {
             Jwts.parserBuilder()
-                .setSigningKey(getKey(key))
+                .setSigningKey(getKey(key.getValue()))
                 .build()
                 .parseClaimsJws(token);
 

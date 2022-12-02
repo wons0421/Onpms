@@ -53,7 +53,7 @@ public class JwtFilter extends OncePerRequestFilter {
         isValidToken =
             jwtProvider.validateToken(
                 token,
-                SecurityEnum.TokenKey.JWT_BASIC.getValue()
+                SecurityEnum.TokenKey.JWT_BASIC
             );
 
         // return 값이 DIFFERENT_KEY이면 키값이 refresh token 일수도 있으니 다시 한번 체크
@@ -61,7 +61,7 @@ public class JwtFilter extends OncePerRequestFilter {
             isValidToken =
                 jwtProvider.validateToken(
                     token,
-                    SecurityEnum.TokenKey.JWT_REFRESH.getValue()
+                    SecurityEnum.TokenKey.JWT_REFRESH
                 );
 
             token = jwtProvider.getToken(
@@ -77,8 +77,6 @@ public class JwtFilter extends OncePerRequestFilter {
                                                .ExpiredTime
                                                .BASIC_EXPIRE_TIME.getTime())
                 );
-
-            response.addHeader("newtoken", token);
         }
 
         // validation 통과 못하면 아웃
@@ -97,6 +95,7 @@ public class JwtFilter extends OncePerRequestFilter {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        response.addHeader("newtoken", token);
 
         filterChain.doFilter(request, response);
     }

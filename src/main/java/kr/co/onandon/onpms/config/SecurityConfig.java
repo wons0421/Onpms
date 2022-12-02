@@ -51,7 +51,7 @@ public class SecurityConfig {
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
 
-        // 인증 처리를 Custiom한 filter로 할 수 있게 filter 등록
+        // 인증 처리를 Custom한 filter로 할 수 있게 filter 등록
         http.addFilterBefore(new JwtFilter(jwtProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)
             .authorizeRequests((authorize) -> authorize
                 .antMatchers("/joinForm", "/join", "/login").permitAll()

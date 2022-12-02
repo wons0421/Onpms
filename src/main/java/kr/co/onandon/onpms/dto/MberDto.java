@@ -15,4 +15,11 @@ public class MberDto {
         private String mberId;
         private String pw;
     }
+
+    @Data
+    public static class LoginResponseDto {
+        private final String token;
+        private final String refreshToken;
+        private final int mberSn;
+    }
 }
