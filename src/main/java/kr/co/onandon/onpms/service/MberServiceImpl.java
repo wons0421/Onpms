@@ -73,16 +73,17 @@ public class MberServiceImpl implements MberService{
             throw new IllegalArgumentException("비밀번호를 확인하세요.");
         }
 
-
-        String token = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_BASIC);
-        String refreshToken = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_REFRESH);
         ValueOperations<String, String> operations
             = redisTemplate.opsForValue();
 
+        // token 발급
+        String token = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_BASIC);
         operations.set(token, ObjectUtils.getDisplayString(findMber.getMberSn()));
-        operations.set(refreshToken, ObjectUtils.getDisplayString(findMber.getMberSn()));
-
         redisTemplate.expire(token, Duration.ofSeconds(BASIC_EXPIRE_TIME));
+
+        // refresh token 발급
+        String refreshToken = jwtProvider.getToken(findMber.getMberSn(), JwtProvider.TokenKey.JWT_REFRESH);
+        operations.set(refreshToken, ObjectUtils.getDisplayString(findMber.getMberSn()));
         redisTemplate.expire(refreshToken, Duration.ofSeconds(REFRESH_EXPIRE_TIME));
 
         Map<String, Object> result = new HashMap<>();
